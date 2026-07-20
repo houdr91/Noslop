@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Reportes generados por el scanner (no versionar outputs)
+.slop-report.json
+.slop-clean.json
+*.slop-report.json
+
+# Tests temporales
+.pytest_cache/
+.coverage
+htmlcov/
