@@ -1,96 +1,96 @@
 ---
-name: slop-audit
-description: Audita portfolios y sites generados con IA (vibe-coded: Claude Code, Cursor, opencode, v0, Lovable, Bolt) en busca de "AI slop": enlaces href="#" no rellenados, LinkedIn/GitHub genéricos, barras de skill con porcentajes inventados, lorem ipsum, placeholders textuales, meta-tags sin rellenar, contenido genérico scribe-tier, formularios sin action y contradicciones narrativas entre la sección About y las skills mostradas. Úsala SOLO cuando el usuario pida algo tipo "revisa mi portfolio recién generado", "audita esta web vibe-coded", "check si mi sitio tiene AI slop", "mi portfolio hecho con Claude/Cursor/v0/Lovable", o presente uno o varios archivos `.html` / `.jsx` / `.tsx` / `.md` de un sitio personal o portfolio que sospeche fue generado con IA. NO la actives para revisión general de código, refactor, bugs funcionales, performance, accesibilidad pura o linteo de proyectos serios.
+name: noslop
+description: Detect "AI slop" in AI-generated (vibe-coded) portfolios and personal sites — broken href="#" links, placeholder LinkedIn/GitHub handles, invented skill percentages, lorem ipsum, textual placeholders, unfilled meta tags, scribe-tier generic copy, forms without action, and narrative contradictions between the About section and the displayed skills. Use ONLY when the user asks something like "review my freshly generated portfolio", "audit this vibe-coded website", "check if my site has AI slop", "my portfolio built with Claude/Cursor/v0/Lovable", or presents one or several `.html` / `.jsx` / `.tsx` / `.md` files of a personal site or portfolio suspected to be AI-generated. Do NOT activate for general code review, refactoring, functional bug hunting, performance, pure accessibility audits or linting of serious projects.
 ---
 
-# slop-audit — Detector de "AI slop" en webs vibe-coded
+# noslop — AI slop detector for vibe-coded websites
 
-Nace de un caso real: un portfolio generado con IA que tenía `href="#"` sin rellenar, un enlace de LinkedIn genérico, barras de skill con porcentajes inventados y contradicciones entre el About ("técnico de soporte") y las skills mostradas (95% en React).
+Born from a real case: an AI-generated portfolio with unfilled `href="#"` links, a generic LinkedIn URL, invented skill percentages, and contradictions between the About ("IT support technician") and the displayed skills (95% in React).
 
-## Cómo usar esta skill
+## How to use this skill
 
-Cuando el usuario te pida auditar un portfolio o web (y la skill se dispare), sigue SIEMPRE este pipeline de 2 fases:
+When the user asks you to audit a portfolio or website (and this skill fires), ALWAYS follow this two-phase pipeline:
 
-### Fase 1 — Escaneo determinista (script de Python)
+### Phase 1 — Deterministic scan (Python script)
 
-1. Identifica qué archivos auditar (los `.html`, `.jsx`, `.tsx`, `.js`, `.ts`, `.md`, `.markdown` que el usuario haya mencionado o que estén en el directorio que pidió).
-2. Ejecuta el script con:
+1. Identify which files to audit (the `.html`, `.jsx`, `.tsx`, `.js`, `.ts`, `.md`, `.markdown` the user mentioned, or those in the directory they asked about).
+2. Run the script with:
 
    ```
-   python <ruta_a_esta_skill>/scripts/slop_scan.py <archivo_o_carpeta> --json -o .slop-report.json
+   python <path_to_this_skill>/scripts/slop_scan.py <file_or_folder> --json -o .noslop-report.json
    ```
 
-   - El script usa SOLO la stdlib de Python (3.8+). No requiere `pip install` de nada.
-   - No hace ninguna llamada a APIs externas. Todo el análisis determinista ocurre localmente.
-   - La salida JSON contiene: hallazgos priorizados (🔴/🟡/🟢), contexto extraído y el score.
+   - The script uses ONLY the Python standard library (3.8+). No `pip install` needed.
+   - It makes NO external API calls. All deterministic analysis runs locally.
+   - The JSON output contains: prioritized findings (🔴/🟡/🟢), extracted context, and the score.
 
-3. Lee el JSON generado y entra a la Fase 2.
+3. Read the generated JSON and proceed to Phase 2.
 
-### Fase 2 — Análisis de coherencia narrativa (tu razonamiento)
+### Phase 2 — Narrative coherence analysis (your reasoning)
 
-El script NO puede detectar contradicciones semánticas. Ese es TRABAJO TUYO. Solo PROCÉDE a esta fase si en el JSON hay contexto suficiente (campo `about` no vacío AND campo `skills` no vacío).
+The script CANNOT detect semantic contradictions. That is YOUR job. Only PROCEED to this phase if the JSON has enough context (a non-empty `about` field AND a non-empty `skills` field).
 
-**Cuando lo invoques, haz uno o varios de estos chequeos con el contexto extraído:**
+**When you invoke it, do one or more of these checks with the extracted context:**
 
-- **About ↔ Skills**: compara el primer párrafo del `about` con la lista de `skills` (label + pct). ¿La narrativa personal cuadra con los porcentajes? Ejemplo de contradicción: "soy técnico de soporte" + "React 95%". Devuelve `INCONSISTENTE` / `OK` / `DUDOSO` + 1 línea de justificación citando el excerpt.
-- **Identidad coherente**: compara `nombre_declarado` con `redes` declaradas. ¿Una persona con 10 skills a 95% no tiene GitHub? ¿El LinkedIn es genérico? Devuelve veredicto.
-- **Hero auténtico**: ¿el `hero` suena autogenerado o auténtico? Frases tipo "moderna y elegante", "creada con amor", "boceto de la aplicación" son fingerprints de slop. Veredicto 0-10.
+- **About ↔ Skills**: compare the first paragraph of `about` with the `skills` list (label + pct). Does the personal narrative match the percentages? Example of contradiction: "I am an IT support tech" + "React 95%". Return `INCONSISTENT` / `OK` / `DUBIOUS` + 1 line of justification quoting the excerpt.
+- **Coherent identity**: compare `declared_name` with declared `socials`. Someone with 10 skills at 95% and no GitHub? Generic LinkedIn? Return a verdict.
+- **Authentic hero**: does the `hero` sound auto-generated or authentic? Phrases like "modern and elegant", "built with love", "sketch of the application" are slop fingerprints. Verdict 0-10.
 
-No hagas más inferencias que esas. La regla de oro es **no invocar tu razonamiento si hay menos de 2 hallazgos rojos o menos de 4 amber** — en ese caso el sitio está limpio y no vale la pena gastar tokens.
+Do not make more inferences than those. The golden rule is **do not invoke your reasoning if there are fewer than 2 broken findings or fewer than 4 fishy findings** — in that case the site is clean and not worth spending tokens on.
 
-### Fase 3 — Reporte final
+### Phase 3 — Final report
 
-Renderiza el reporte en el formato exacto que entrega el script (ASCII pretty, tabla rojos/amber/menores) y AÑADE al final una sección titulada:
-
-```
-ANÁLISIS DE COHERENCIA NARRATIVA  🤔
-  › Hallazgo 1: <tu juicio>
-    Evidencia: <excerpt citado> ⟷ <titulo skill bar 95%>
-    Veredicto: INCONSISTENTE / OK / DUDOSO
-
-  › Hallazgo 2: ...
-```
-
-Si decidiste no invocar la inferencia porque el sitio estaba limpio, escribe:
-```
-ANÁLISIS DE COHERENCIA NARRATIVA  🤔
-  · Sitio sin hallazgos críticos. No se invoca inferencia narrativa.
-```
-
-## Formato del reporte
-
-El script ya entrega el reporte formateado. Tu única tarea es añadir la sección narrativa arriba. NO cambies el resto del reporte.
-
-El score es 0-100, donde **100 = sitio limpio** y **0 = slop absoluto**.
-
-## Reglas de comportamiento
-
-- **Sé transparente**: lo detectado por regex LLEVA icono 🔴/🟡/🟢 y línea. Lo inferido por ti LLEVA icono 🤔 y la sección separada — el usuario debe distinguir "esto es slop objetivo" vs "esto es inferencia".
-- **Tri-estado**: nunca digas "roto" en una inferencia — usa `INCONSISTENTE` / `OK` / `DUDOSO`.
-- **No alucines**: si el script no extrajo `about`, no inventes un about. Si no hay skills, no inventes skills.
-- **No edites archivos del usuario** durante el scan. Solo lee y reporta. Si el usuario pide arreglar algo, pídele confirmación explícita primero.
-- **Idioma del reporte**: español por defecto. Sólo cambia a inglés si el usuario te pidió el audit en inglés.
-
-## Limitaciones conocidas
-
-- El scanner puede dar falsos positivos en handles cortos de LinkedIn (`linkedin.com/in/ai`) — los marca como 🟡 (sospechoso), no como 🔴. Si el usuario te dice "ese handle es real", descarta el hallazgo.
-- En JSX/TSX el parser es regex, no un AST: no detecta imports sin usar ni refs rotas (la skill novalida código, valida slop).
-- El detector de idioma body vs `lang` declarado usa stop-words; para textos muy cortos puede fallar.
-- Los porcentajes de skill `< 80` nunca se marcan como mágicos — sólo se marcan acumulaciones sospechosas (≥5 barras con mismo pct, o ≥3 barras ≥95%, o secuencia mágica 80-100).
-
-## Estructura de la skill
+Render the report in the exact format the script outputs (ASCII pretty, broken/fishy/minor table) and APPEND at the end a section titled:
 
 ```
-slop-audit/
-├── SKILL.md                 # este archivo
+NARRATIVE COHERENCE  🤔
+  › Finding 1: <your judgement>
+    Evidence: <quoted excerpt> ⟷ <skill bar 95% title>
+    Verdict: INCONSISTENT / OK / DUBIOUS
+
+  › Finding 2: ...
+```
+
+If you decided not to invoke inference because the site was clean, write:
+```
+NARRATIVE COHERENCE  🤔
+  · Site without critical findings. Narrative inference skipped.
+```
+
+## Report format
+
+The script already produces a formatted report. Your only task is to add the narrative section above. Do NOT change the rest of the report.
+
+The score is 0-100, where **100 = clean site** and **0 = absolute slop**.
+
+## Behavioral rules
+
+- **Be transparent**: findings detected by regex CARRY 🔴/🟡/🟢 icons and a line. Inferences made by you CARRY a 🤔 icon and the separate section — the user must distinguish "this is objective slop" from "this is a guess".
+- **Tri-state**: never say "broken" in an inference — use `INCONSISTENT` / `OK` / `DUBIOUS`.
+- **Do not hallucinate**: if the script did not extract an `about`, do not invent one. If there are no skills, do not invent skills.
+- **Do not edit the user's files** during the scan. Only read and report. If the user asks you to fix something, ask for explicit confirmation first.
+- **Report language**: English by default. Switch to Spanish only if the user asked for the audit in Spanish.
+
+## Known limitations
+
+- The scanner can produce false positives on short LinkedIn handles (`linkedin.com/in/ai`) — it flags them as 🟡 (fishy), not 🔴 (broken). If the user tells you "that handle is real", dismiss the finding.
+- In JSX/TSX the parser is regex, not an AST: it does not detect unused imports or broken refs (this skill does not validate code, it validates slop).
+- The body-language vs `lang` declaration detector uses stop-words; for very short texts it can fail.
+- Skill percentages `< 80` are never marked as magic — only suspicious aggregations are flagged (≥5 bars at the same pct, or ≥3 bars ≥95%, or the magic 80-100 sequence).
+
+## Skill structure
+
+```
+no-slop/
+├── SKILL.md                 # this file
 ├── scripts/
-│   ├── slop_scan.py         # scanner determinista (classmethods stdlib)
-│   └── rules.py             # reglas editables por el usuario
+│   ├── slop_scan.py         # deterministic scanner (stdlib only)
+│   └── rules.py             # user-editable rules
 ├── examples/
-│   ├── clean_portfolio.html # caso limpio (0 rojos esperados)
-│   ├── slop_portfolio.html  # caso real de slop
-│   └── edge_*.html          # casos edge para afinar
+│   ├── clean_portfolio.html # clean case (0 broken expected)
+│   ├── slop_portfolio.html  # real slop case
+│   └── edge_*.html          # edge cases for tuning
 ├── tests/
-│   └── run_tests.py         # suite sin pytest, stdlib only
+│   └── run_tests.py         # suite without pytest, stdlib only
 └── README.md
 ```

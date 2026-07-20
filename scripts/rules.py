@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Reglas deterministas para slop-audit. Editable sin tocar el scanner.
-Cada regla es una tupla (categoria, descripcion, patron_regex, flags).
-categoria: 'rojo' | 'amber' | 'menor'
-flags: combinacion de re.IGNORECASE | re.MULTILINE | re.DOTALL etc.
+"""Deterministic rules for noslop. Editable without touching the scanner.
+Each rule is a tuple (category, description, regex_pattern, flags).
+category: 'broken' | 'fishy' | 'minor'
+flags: combination of re.IGNORECASE | re.MULTILINE | re.DOTALL etc.
 """
 
 import re
 
-# Categorias
-ROJO = "rojo"
-AMBER = "amber"
-MENOR = "menor"
+# Categories
+BROKEN = "broken"
+FISHY = "fishy"
+MINOR = "minor"
+
+# Backwards-compatible aliases (kept for any external reference)
+ROJO = BROKEN
+AMBER = FISHY
+MENOR = MINOR
 
 # ---------------------------------------------------------------------------
 # A. ENLACES y navegacion

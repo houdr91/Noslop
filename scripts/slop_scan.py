@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""slop-audit scanner determinista. Solo stdlib. Cero dependencias externas.
-Uso:
-    python slop_scan.py <path>            # archivo o directorio
-    python slop_scan.py <path> --json     # salida JSON a stdout
-    python slop_scan.py <path> -o report.json   # volcar JSON a archivo
+"""noslop deterministic scanner. Standard library only. Zero external dependencies.
+Usage:
+    python slop_scan.py <path>            # file or directory
+    python slop_scan.py <path> --json     # JSON output to stdout
+    python slop_scan.py <path> -o report.json   # dump JSON to a file
 """
 
 import os
@@ -26,15 +26,15 @@ import rules as R  # noqa: E402
 
 
 SCORING = {
-    R.ROJO: 10.0,
-    R.AMBER: 3.0,
-    R.MENOR: 1.0,
+    R.BROKEN: 10.0,
+    R.FISHY: 3.0,
+    R.MINOR: 1.0,
 }
 
 SEVERITY_ICON = {
-    R.ROJO: "🔴",
-    R.AMBER: "🟡",
-    R.MENOR: "🟢",
+    R.BROKEN: "ðŸ”´",
+    R.FISHY: "ðŸŸ¡",
+    R.MINOR: "ðŸŸ¢",
 }
 
 EXTS_ADMITIDOS = {".html", ".htm", ".jsx", ".tsx", ".tsx", ".js", ".ts", ".jsx", ".md", ".markdown"}
@@ -71,7 +71,7 @@ def encontrar_elementos_con_atributos(texto, regex):
 
 def extraer_seccion(texto, nombre_seccion, max_chars=350):
     """Extrae el cuerpo de una seccion cuyo tag/class/id coincide con nombre.
-    Acepta variantes español/inglés.
+    Acepta variantes espaÃ±ol/inglÃ©s.
     """
     aliases = {
         "about": ["about", "sobre-mi", "sobre-m\u00ed", "sobremi", "sobre", "perfil",
@@ -183,7 +183,7 @@ def extraer_nombre_declarado(texto):
     title = extraer_title(texto)
     if title:
         # intentar separar
-        partes = re.split(r'\s*[\|\-—··]\s*', title)
+        partes = re.split(r'\s*[\|\-â€”Â·Â·]\s*', title)
         for p in partes:
             p = p.strip()
             if 2 < len(p) < 60 and not re.search(r'portfolio|web|site|valer',
@@ -253,7 +253,7 @@ def escanear_skill_bars(texto):
             if n >= 5 and pct >= 80:
                 out.append({
                     "linea": 0,
-                    "categoria": R.ROJO,
+                    "categoria": R.BROKEN,
                     "descripcion": f"{n} barras de skill todas a {pct}% (inventado)",
                     "snippet": ", ".join([lbl for lbl, p in skills if p == pct][:5]),
                 })
@@ -262,7 +262,7 @@ def escanear_skill_bars(texto):
         if len(altas) >= 3:
             out.append({
                 "linea": 0,
-                "categoria": R.ROJO,
+                "categoria": R.BROKEN,
                 "descripcion": f"{len(altas)} barras con pct>=95 (sospechoso)",
                 "snippet": ", ".join([f"{lbl}={pct}%" for lbl, pct in skills if pct >= 95][:5]),
             })
@@ -271,7 +271,7 @@ def escanear_skill_bars(texto):
         if cien:
             out.append({
                 "linea": 0,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"{len(cien)} barras con 100% (presuncion)",
                 "snippet": ", ".join([lbl for lbl, p in skills if p == 100]),
             })
@@ -279,7 +279,7 @@ def escanear_skill_bars(texto):
         if sorted(set(pcts)) == [80, 85, 90, 95, 100] and len(pcts) >= 5:
             out.append({
                 "linea": 0,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": "secuencia magica 80/85/90/95/100",
                 "snippet": ", ".join([f"{lbl}" for lbl, _ in skills]),
             })
@@ -288,7 +288,7 @@ def escanear_skill_bars(texto):
         if not label.strip():
             out.append({
                 "linea": 0,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"barra de skill sin label {pct}%",
                 "snippet": label,
             })
@@ -309,7 +309,7 @@ def escanear_links_internos(texto, extension):
             ln = linea_de_offset(texto, m.start())
             out.append({
                 "linea": ln,
-                "categoria": R.ROJO,
+                "categoria": R.BROKEN,
                 "descripcion": f"href='#{m.group(1)}' pero no existe id='{m.group(1)}'",
                 "snippet": m.group(0)[:80],
             })
@@ -343,7 +343,7 @@ def escanear_assets_inexistentes(texto, base_dir, extension):
             if not os.path.exists(ruta):
                 out.append({
                     "linea": line_num,
-                    "categoria": R.ROJO,
+                    "categoria": R.BROKEN,
                     "descripcion": f"{attr}='{url}' archivo no existe",
                     "snippet": line.strip()[:80],
                 })
@@ -359,14 +359,14 @@ def escanear_idioma_vs_lang(texto):
         if idioma_body == 'es' and lang_declarado == 'en':
             out.append({
                 "linea": 1,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"html lang='{lang_declarado}' pero cuerpo en espanol",
                 "snippet": m.group(0)[:80],
             })
         elif idioma_body == 'en' and lang_declarado == 'es':
             out.append({
                 "linea": 1,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"html lang='{lang_declarado}' pero cuerpo en ingles",
                 "snippet": m.group(0)[:80],
             })
@@ -386,7 +386,7 @@ def escanear_click_here(texto):
             ln = linea_de_offset(texto, m.start())
             out.append({
                 "linea": ln,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"enlace con texto generico '{m.group('texto').strip()}'",
                 "snippet": m.group(0)[:80],
             })
@@ -404,7 +404,7 @@ def escanear_h2_literales(texto):
             ln = linea_de_offset(texto, m.start())
             out.append({
                 "linea": ln,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": f"titulo seccion literal sin contexto: '{txt}'",
                 "snippet": m.group(0)[:80],
             })
@@ -414,14 +414,14 @@ def escanear_h2_literales(texto):
 def escanear_footer_default(texto):
     out = []
     patrones = [
-        # © 2025 Your Name  /  © 2025 Tu nombre
-        re.compile(r'(?is)©\s*\d{4}\s+(?:your\s+name|tu\s+nombre)\b', re.I),
-        # © {year} template literal no sustituido
-        re.compile(r'(?is)©\s*\$\{[^}]*year[^}]*\}', re.I),
-        # © 2025  All rights reserved.  sin autor despues del anyo
-        re.compile(r'(?is)©\s*\d{4}\s*\.?\s*all\s+rights\s+reserved\s*\.\s*(?:</p>|<br|$)', re.I),
-        # © año vacio y nada despues
-        re.compile(r'(?is)©\s*\d{4}\s*(?:</|<br\s*/?>\s*$|\s*$)', re.I),
+        # Â© 2025 Your Name  /  Â© 2025 Tu nombre
+        re.compile(r'(?is)Â©\s*\d{4}\s+(?:your\s+name|tu\s+nombre)\b', re.I),
+        # Â© {year} template literal no sustituido
+        re.compile(r'(?is)Â©\s*\$\{[^}]*year[^}]*\}', re.I),
+        # Â© 2025  All rights reserved.  sin autor despues del anyo
+        re.compile(r'(?is)Â©\s*\d{4}\s*\.?\s*all\s+rights\s+reserved\s*\.\s*(?:</p>|<br|$)', re.I),
+        # Â© aÃ±o vacio y nada despues
+        re.compile(r'(?is)Â©\s*\d{4}\s*(?:</|<br\s*/?>\s*$|\s*$)', re.I),
     ]
     for pat in patrones:
         for m in pat.finditer(texto):
@@ -431,7 +431,7 @@ def escanear_footer_default(texto):
                 continue
             out.append({
                 "linea": ln,
-                "categoria": R.AMBER,
+                "categoria": R.FISHY,
                 "descripcion": "footer default sin reemplazo",
                 "snippet": m.group(0).strip()[:80],
             })
@@ -446,7 +446,7 @@ def escanear_buzzwords(texto):
         if n:
             out.append({
                 "linea": 0,
-                "categoria": R.MENOR,
+                "categoria": R.MINOR,
                 "descripcion": f"buzzword: '{bw}' x{n}",
                 "snippet": "",
             })
@@ -527,9 +527,9 @@ def calcular_score(hallazgos):
 # ---------------------------------------------------------------------------
 
 def render_reporte(todos, contextos, base_path=None):
-    rojos = [h for h in todos if h["categoria"] == R.ROJO]
-    amber = [h for h in todos if h["categoria"] == R.AMBER]
-    menores = [h for h in todos if h["categoria"] == R.MENOR]
+    rojos = [h for h in todos if h["categoria"] == R.BROKEN]
+    amber = [h for h in todos if h["categoria"] == R.FISHY]
+    menores = [h for h in todos if h["categoria"] == R.MINOR]
     score = calcular_score(todos)
     n_archivos = len(contextos)
     fecha = datetime.now().isoformat(timespec='seconds')
@@ -537,20 +537,19 @@ def render_reporte(todos, contextos, base_path=None):
     out = []
     ancho = 70
     def pad(s, ancho=ancho):
-        # pad considers display width approx using len
         return s + " " * max(0, ancho - len(s) - 1) + "║"
     out.append("╔" + "═" * ancho + "╗")
-    out.append(pad("║  SLOP-AUDIT REPORT"))
-    out.append(pad(f"║  Objetivo: {base_path or ''}"))
-    out.append(pad(f"║  Generado: {fecha}"))
-    out.append(pad(f"║  Archivos: {n_archivos}    Slop-Score: {score}/100"))
+    out.append(pad("║  NO SLOP REPORT"))
+    out.append(pad(f"║  Target: {base_path or ''}"))
+    out.append(pad(f"║  Generated: {fecha}"))
+    out.append(pad(f"║  Files: {n_archivos}    Slop-Score: {score}/100"))
     out.append("╚" + "═" * ancho + "╝")
     out.append("")
 
-    out.append("RESUMEN")
-    out.append(f"  🔴 Rotos       : {len(rojos)}  (críticos - el usuario lo nota)")
-    out.append(f"  🟡 Sospechosos : {len(amber)}  (template sin personalizar)")
-    out.append(f"  🟢 Menores     : {len(menores)}  (accesibilidad/SEO low-hanging fruit)")
+    out.append("SUMMARY")
+    out.append(f"  🔴 Broken   : {len(rojos)}  (user-visible, embarrassing)")
+    out.append(f"  🟡 Fishy    : {len(amber)}  (template not personalized)")
+    out.append(f"  🟢 Minor    : {len(menores)}  (accessibility / SEO low-hanging fruit)")
     out.append("")
 
     def render_grupo(titulo, icon, items):
@@ -568,25 +567,25 @@ def render_reporte(todos, contextos, base_path=None):
                 out.append(f"  │  >> {h['snippet']}")
             out.append("  └")
 
-    render_grupo("DETALLE — Rotos", "🔴", rojos)
-    render_grupo("DETALLE — Sospechosos", "🟡", amber)
-    render_grupo("DETALLE — Menores", "🟢", menores)
+    render_grupo("DETAIL — Broken", "🔴", rojos)
+    render_grupo("DETAIL — Fishy", "🟡", amber)
+    render_grupo("DETAIL — Minor", "🟢", menores)
 
-    # Contexto para inferencia narrativa
+    # Context for narrative inference
     out.append("")
-    out.append("ANÁLISIS DE COHERENCIA NARRATIVA  🤔  (contexto para el agente)")
+    out.append("NARRATIVE COHERENCE  🤔  (context for the agent)")
     hay_about = any(c.get("about") for c in contextos.values())
     hay_skills = any(c.get("skills") for c in contextos.values())
     trigger_inferencia = len(rojos) + (len(amber) // 2) >= 2
     if not (hay_about and hay_skills):
-        out.append("  · No se encontró sección About con skills suficiente — se omite inferencia.")
-        out.append("  · Contexto extraído:")
+        out.append("  · Not enough About / Skills context — inference skipped.")
+        out.append("  · Extracted context:")
     else:
         if trigger_inferencia:
-            out.append("  · Invoque su razonamiento sobre About ↔ Skills (ver contexto abajo).")
+            out.append("  · Invoke reasoning about About ↔ Skills (see context below).")
         else:
-            out.append("  · Pocos hallazgos críticos — inferencia opcional.")
-        out.append("  · Contexto extraído:")
+            out.append("  · Few critical findings — inference optional.")
+        out.append("  · Extracted context:")
     for arc, ctx in contextos.items():
         if not ctx:
             continue
@@ -594,21 +593,21 @@ def render_reporte(todos, contextos, base_path=None):
         if base_path and arc_c.startswith(base_path):
             arc_c = arc_c[len(base_path):].lstrip("\\/")
         out.append(f"  ── {arc_c} ──")
-        out.append(f"     nombre declarado : {ctx.get('nombre_declarado','(no detectado)')}")
-        out.append(f"     idioma body       : {ctx.get('idioma_body')}")
-        out.append(f"     title             : {ctx.get('title','')}")
+        out.append(f"     declared name   : {ctx.get('nombre_declarado','(not detected)')}")
+        out.append(f"     body language   : {ctx.get('idioma_body')}")
+        out.append(f"     title           : {ctx.get('title','')}")
         if ctx.get("about"):
-            out.append(f"     about             : \"{ctx['about'][:200]}\"")
+            out.append(f"     about           : \"{ctx['about'][:200]}\"")
         if ctx.get("skills"):
             skills_str = ", ".join(f"{s['label']}={s['pct']}%"
                                    for s in ctx["skills"])
-            out.append(f"     skills            : {skills_str}")
+            out.append(f"     skills          : {skills_str}")
         if ctx.get("redes"):
-            out.append(f"     redes             : {ctx['redes']}")
+            out.append(f"     socials         : {ctx['redes']}")
 
-    # Prioridad
+    # Fix priority
     out.append("")
-    out.append("PRIORIDAD DE ARREGLO")
+    out.append("FIX PRIORITY")
     prioridad = sorted(rojos, key=lambda h: h["descripcion"])[:8]
     for i, h in enumerate(prioridad, 1):
         out.append(f"  {i}. 🔴 {h['descripcion']}  [{h['archivo']}:{h['linea']}]")
@@ -686,7 +685,7 @@ def main(args):
 
 
 def main_cli():
-    parser = argparse.ArgumentParser(description="slop-audit scanner")
+    parser = argparse.ArgumentParser(description="noslop scanner")
     parser.add_argument("path", nargs="?", help="Archivo o carpeta a auditar")
     parser.add_argument("--json", action="store_true", help="Salida JSON a stdout")
     parser.add_argument("-o", "--output", help="Volcar JSON a archivo")
@@ -696,3 +695,4 @@ def main_cli():
 
 if __name__ == "__main__":
     main_cli()
+

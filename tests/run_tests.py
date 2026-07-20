@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Suite de pruebas para slop-audit.
-Sin pytest. Solo stdlib. Uso:
+"""Test suite for noslop.
+No pytest. Standard library only. Usage:
     python tests/run_tests.py
 """
 
@@ -39,7 +39,7 @@ def escanear(nombre_archivo):
 
 def contar(hallazgos):
     c = Counter(h["categoria"] for h in hallazgos)
-    return c.get("rojo", 0), c.get("amber", 0), c.get("menor", 0)
+    return c.get("broken", 0), c.get("fishy", 0), c.get("minor", 0)
 
 
 resultados = []
@@ -189,7 +189,7 @@ def test_help():
 
 def main():
     print("════════════════════════════════════════════════════════════════")
-    print("  slop-audit — suite de pruebas")
+    print("  noslop — test suite")
     print("════════════════════════════════════════════════════════════════")
     tests = [
         test_clean_portfolio,
